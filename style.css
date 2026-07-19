@@ -1,0 +1,89 @@
+/* 画面全体を地図にし、スマートフォンの安全領域にも対応します。 */
+html, body, main, #map {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* 圃場番号だけを見やすく重ねるためのマーカーです。 */
+.field-label {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  color: #fff;
+  background: #1f5f3a;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 5px rgb(0 0 0 / 45%);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* 読み込み状態は地図の上に控えめに表示します。 */
+.status {
+  position: fixed;
+  z-index: 1000;
+  top: calc(12px + env(safe-area-inset-top));
+  left: 50%;
+  max-width: calc(100% - 120px);
+  margin: 0;
+  padding: 8px 12px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 1px 6px rgb(0 0 0 / 25%);
+  font-size: 13px;
+}
+
+.status.is-hidden { display: none; }
+.status.is-error { color: #9d1c1c; }
+
+/* 現在地ボタンは親指で押しやすい大きさにします。 */
+.locate-button {
+  position: fixed;
+  z-index: 1000;
+  right: 12px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+  color: #1f5f3a;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.locate-button:active { background: #e8f1eb; }
+
+/* 任意のExcelファイルを端末から選ぶためのボタンです。 */
+.file-button {
+  position: fixed;
+  z-index: 1000;
+  left: 12px;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  display: inline-grid;
+  min-height: 44px;
+  padding: 0 16px;
+  place-items: center;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 35%);
+  color: #1f5f3a;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+/* ポップアップ内の情報を読みやすく整えます。 */
+.field-popup h2 { margin: 0 0 8px; font-size: 18px; }
+.field-popup dl { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: 0; }
+.field-popup dt { color: #555; font-weight: 700; }
+.field-popup dd { margin: 0; }
+.navigate-link { display: block; margin-top: 14px; color: #0b57d0; font-weight: 700; }
