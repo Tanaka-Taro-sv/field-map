@@ -29,8 +29,8 @@ function escapeHtml(value) {
 
 // ポップアップの内容とGoogleマップへのナビリンクを作成します。
 function createPopup(field) {
-  const latitude = Number(field.latitude);
-  const longitude = Number(field.longitude);
+  const latitude = Number(field.lat ?? field.latitude);
+  const longitude = Number(field.lng ?? field.longitude);
   const destination = encodeURIComponent(`${latitude},${longitude}`);
   const navigationUrl = `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
 
@@ -55,14 +55,23 @@ function readExcel(arrayBuffer) {
   return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: "" });
 }
 
+// CSVを読み込み、Excelと同じ配列形式の圃場データへ変換します。
+function readCsv(csvText) {
+  // Excel系ソフトが付与するUTF-8 BOMを取り除いてから解析します。
+  const workbook = XLSX.read(csvText.replace(/^\uFEFF/, ""), { type: "string" });
+  const firstSheetName = workbook.SheetNames[0];
+  if (!firstSheetName) throw new Error("CSVファイルにデータがありません。");
+  return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], { defval: "" });
+}
+
 // 圃場データを受け取り、圃場番号のみのマーカーを地図へ配置します。
 function displayFields(fields) {
   fieldLayer.clearLayers();
   if (!Array.isArray(fields) || fields.length === 0) throw new Error("圃場データがありません。");
   const bounds = [];
   fields.forEach((field) => {
-    const latitude = Number(field.latitude);
-    const longitude = Number(field.longitude);
+    const latitude = Number(field.lat ?? field.latitude);
+    const longitude = Number(field.lng ?? field.longitude);
     if (!field.id || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
 
     const labelIcon = L.divIcon({
@@ -84,35 +93,29 @@ function displayFields(fields) {
   window.setTimeout(() => statusElement.classList.add("is-hidden"), 2500);
 }
 
-// GitHub Pagesに配置したfields.xlsxを自動で読み込みます。
-async function loadDefaultExcel() {
+// GitHub Pagesに配置したfields.csvを自動で読み込みます。
+async function loadDefaultFields() {
   try {
-    const response = await fetch("fields.xlsx");
-    if (!response.ok) throw new Error("fields.xlsxが見つかりません。");
-    displayFields(readExcel(await response.arrayBuffer()));
+    const response = await fetch("fields.csv");
+    if (!response.ok) throw new Error("fields.csvが見つかりません。");
+    displayFields(readCsv(await response.text()));
   } catch (error) {
-    // 移行中も地図を使えるよう、Excelがない場合だけ従来のJSONを読み込みます。
-    try {
-      const response = await fetch("fields.json");
-      if (!response.ok) throw new Error("圃場データが見つかりません。");
-      displayFields(await response.json());
-      statusElement.textContent = "fields.xlsxを配置するとExcelの内容を自動表示します。";
-      statusElement.classList.remove("is-hidden");
-    } catch (fallbackError) {
-      statusElement.textContent = "fields.xlsxを配置するか、左下のExcelを選択してください。";
-      statusElement.classList.add("is-error");
-    }
+    statusElement.textContent = "fields.csvを配置するか、左下のデータを選択してください。";
+    statusElement.classList.add("is-error");
   }
 }
 
-// 端末から選んだExcelも同じ形式で地図に表示します。
+// 端末から選んだExcelまたはCSVも同じ形式で地図に表示します。
 excelInput.addEventListener("change", async () => {
   const file = excelInput.files[0];
   if (!file) return;
   try {
-    statusElement.textContent = "Excelファイルを読み込んでいます…";
+    statusElement.textContent = "圃場データを読み込んでいます…";
     statusElement.classList.remove("is-hidden", "is-error");
-    displayFields(readExcel(await file.arrayBuffer()));
+    const fields = /\.csv$/i.test(file.name)
+      ? readCsv(await file.text())
+      : readExcel(await file.arrayBuffer());
+    displayFields(fields);
   } catch (error) {
     statusElement.textContent = error.message;
     statusElement.classList.add("is-error");
@@ -148,4 +151,4 @@ function showCurrentLocation() {
 }
 
 locateButton.addEventListener("click", showCurrentLocation);
-loadDefaultExcel();
+loadDefaultFields();
